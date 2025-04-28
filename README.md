@@ -19,6 +19,32 @@ See our Developement Guide for more information on how to use the pipelines to c
 
 ## Installation
 
+### System Preparation
+First, update and fully upgrade your Raspberry Pi system:
+```bash
+sudo apt update
+sudo apt full-upgrade -y
+sudo apt autoremove -y
+```
+### Install Required Packages
+Install Hailo and necessary dependencies:
+```bash
+sudo apt install hailo-all -y
+sudo apt install -y git python3 python3-venv python3-pip libopencv-dev
+```
+Reboot your Raspberry Pi:
+```bash
+sudo reboot
+
+```
+
+### MQTT Installation 
+If you want to enable MQTT communication:
+```bash
+sudo apt update
+sudo apt install python3-paho-mqtt
+```
+
 ### Clone the Repository
 ```bash
 git clone https://github.com/hailo-ai/hailo-rpi5-examples.git
@@ -27,21 +53,59 @@ Navigate to the repository directory:
 ```bash
 cd hailo-rpi5-examples
 ```
-
-### Installation
-Run the following script to automate the installation process:
+### Setup Environment and Install
+Source the environment and install the required packages:
+```bash
+source setup_env.sh
+```
+```bash
+./download_resources.sh
+```
 ```bash
 ./install.sh
+```
+
+### Creating a Systemd Service
+To automatically start the detection application on boot, create a systemd service:
+
+Edit or create the following file:
+```bash
+sudo nano /etc/systemd/system/hailo.service
+```
+Add the following content (replace USUARIO with your Raspberry Pi username):
+```bash
+[Unit]
+Description=Hailo Detection Service
+After=network.target
+
+[Service]
+User=USUARIO
+WorkingDirectory=/home/USUARIO/hailo-rpi5-examples
+ExecStart=/bin/bash -c 'source setup_env.sh && python3 basic_pipelines/detection.py --input rpi'
+Restart=always
+RestartSec=5s
+Environment="DISPLAY=:0"
+StandardOutput=append:/var/log/hailo.log
+StandardError=append:/var/log/hailo.log
+
+[Install]
+WantedBy=multi-user.target
+```
+Reload the daemon, enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable hailo
+sudo systemctl start hailo
+sudo reboot
+```
+Check service status:
+```bash
+sudo systemctl status hailo
 ```
 
 ### Documentation
 For additional information and documentation on how to use the pipelines to create your own custom pipelines, see the [Basic Pipelines Documentation](doc/basic-pipelines.md).
 
-### Running The Examples
-When opening a new terminal session, ensure you have sourced the environment setup script:
-```bash
-source setup_env.sh
-```
 ### Detection Example
 
 ![Detection Example](doc/images/detection.gif)
